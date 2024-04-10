@@ -1,0 +1,237 @@
+-- task 1: create & initialize database 
+create database _petpals;
+use _petpals;
+
+
+-- task 2: create tables
+create table pets (
+    id int auto_increment primary key,
+    name varchar(255),
+    age int,
+    breed varchar(255),
+    type varchar(50),
+    available_for_adoption bit
+);
+
+
+insert into pets (name, age, breed, type, available_for_adoption) values
+('buddy', 3, 'labrador retriever', 'dog', 1),
+('whiskers', 2, 'siamese', 'cat', 1),
+('max', 5, 'golden retriever', 'dog', 0);
+
+create table shelters (
+    id int auto_increment primary key,
+    name varchar(255),
+    location varchar(255)
+);
+
+insert into shelters (name, location) values
+('happy paws shelter', 'coimbatore'),
+('cozy critters rescue', 'chennai'),
+('safe haven animal shelter', 'salem');
+
+
+
+create table donations (
+    id int auto_increment primary key,
+    name varchar(255),
+    donation_type varchar(50),
+    donation_amount decimal(10, 2),
+    donation_item varchar(255),
+    donation_date date
+);
+insert into donations (name, donation_type, donation_amount, donation_item, donation_date) values
+('hemanth', 'cash', 100.00, null, '2024-03-10'),
+('anand', 'item', null, 'pet food', '2024-04-15'),
+('ajay', 'cash', 200.00, null, '2024-05-20');
+
+create table adoption_events (
+    id int auto_increment primary key,
+    name varchar(255),
+    event_date date,
+    location varchar(255)
+);
+
+insert into adoption_events (name, event_date, location) values
+('furry friends fest', '2024-07-10', 'coimbatore'),
+('paws in the park', '2024-08-15', 'chennai'),
+('rescue me event', '2024-09-20', 'salem');
+
+-- task 4 : 
+create table participants (
+    id int auto_increment primary key,
+    name varchar(255),
+    participant_type varchar(50),
+    event_id int,
+    foreign key (event_id) references adoption_events(id)
+);
+
+insert into participants (name, participant_type, event_id) values
+('happy paws shelter', 'shelter', 1),
+('stuti', 'adopter', 1),
+('cozy critters rescue', 'shelter', 2),
+('yuvraj', 'adopter', 2),
+('safe haven animal shelter', 'shelter', 3),
+('vibuti', 'adopter', 3);
+
+-- task 5: list of available pets
+select name, age, breed, type
+from pets
+where available_for_adoption = 1;
+
+/*
+# name, age, breed, type
+'buddy', '3', 'labrador retriever', 'dog'
+'whiskers', '2', 'siamese', 'cat'
+*/
+
+-- task 6: names of participants registered for a specific adoption event
+select name
+from participants
+where event_id =1;
+
+/*
+# name
+'happy paws shelter'
+'stuti'
+*/
+
+-- task 7: update shelter information
+
+    update shelters
+    set name = 'happy tails shelter', location = 'madurai'
+    where id = 1;
+    /*
+    # id, name, location
+'1', 'happy tails shelter', 'madurai'
+'2', 'cozy critters rescue', 'chennai'
+'3', 'safe haven animal shelter', 'salem'
+*/
+    select * from shelters;
+
+-- task 8: total donation amount for each shelter
+SELECT s.name, COALESCE(SUM(d.donation_amount), 0) AS total_donation_amount
+FROM shelters s
+LEFT JOIN donations d ON s.id = d.id
+GROUP BY s.name;
+
+/*
+# name, total_donation_amount
+'cozy critters rescue', '0.00'
+'happy paws shelter', '100.00'
+'safe haven animal shelter', '200.00'
+*/
+
+
+
+
+-- task 10: total donation amount for each month and year
+select date_format(donation_date, '%m %y') as month_year, sum(donation_amount) as total_donation_amount
+from donations
+group by date_format(donation_date, '%y-%m');
+
+/*
+# month_year, total_donation_amount
+'03 24', '100.00'
+'04 24', NULL
+'05 24', '200.00'
+*/
+
+-- task 11: distinct breeds for pets aged btw 1 & 3 years or > 5 years
+select distinct breed
+from pets
+where (age between 1 and 3) or age > 5;
+/*
+breed
+labrador retriever
+siamese
+*/
+-- task 12: list of pets and their respective shelters where the pets are currently available for adoption
+select p.name as pet_name, p.age, p.breed, p.type, s.name as shelter_name
+from pets p
+join shelters s on p.id = s.id
+where p.available_for_adoption = 1;
+
+/*
+# pet_name, age, breed, type, shelter_name
+'buddy', '3', 'labrador retriever', 'dog', 'happy paws shelter'
+'whiskers', '2', 'siamese', 'cat', 'cozy critters rescue'
+*/
+
+-- task 13: find the total number of participants in events organized by shelters located in a specific city
+select count(*) as total_participants
+from participants p
+join adoption_events ae on p.event_id = ae.id
+join shelters s on ae.location = s.location
+where s.location = 'chennai';
+/*
+# total_participants
+'2'
+*/
+
+-- task 14: list of unique breeds for pets with ages between 1 and 5 years
+select distinct breed
+from pets
+where age between 1 and 5;
+/*
+# breed
+'labrador retriever'
+'siamese'
+'golden retriever'
+*/
+
+
+-- task 17: list of all shelters along with the count of pets currently available for adoption in each shelter
+select s.name as shelter_name, count(*) as available_pets_count
+from shelters s
+left join pets p on s.id = p.id and p.available_for_adoption = 1
+group by s.id;
+
+/*
+# shelter_name, available_pets_count
+'happy paws shelter', '1'
+'cozy critters rescue', '1'
+'safe haven animal shelter', '1'
+*/
+
+-- task 18: pairs of pets from the same shelter that have the same breed
+select p1.name as pet1_name, p2.name as pet2_name, s.name as shelter_name
+from pets p1, pets p2, shelters s
+where p1.id = p2.id
+and p1.id < p2.id
+and p1.breed = p2.breed
+and p1.id = s.id;
+
+/*
+null
+*/
+-- task 19: all possible combinations of shelters and adoption events
+select s.name as shelter_name, ae.name as event_name
+from shelters s, adoption_events ae;
+
+/*
+shelter_name        event_name
+happy paws shelter	furry friends fest
+cozy critters rescue	furry friends fest
+safe haven animal shelter	furry friends fest
+happy paws shelter	paws in the park
+cozy critters rescue	paws in the park
+safe haven animal shelter	paws in the park
+happy paws shelter	rescue me event
+cozy critters rescue	rescue me event
+safe haven animal shelter	rescue me event
+*/
+
+-- task 20: shelter that has the highest number of adopted pets
+select s.name as shelter_name, count(*) as adopted_pets_count
+from shelters s
+join pets p on s.id = p.id
+where p.id is not null
+group by s.id
+order by adopted_pets_count desc
+limit 1;
+
+/*
+# shelter_name, adopted_pets_count
+'happy paws shelter', '1'
+*/
