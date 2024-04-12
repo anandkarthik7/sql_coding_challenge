@@ -1,0 +1,267 @@
+create database students_db;
+use students_db;
+create table students (
+    student_id int primary key auto_increment,
+    first_name varchar(50),
+    last_name varchar(50),
+    date_of_birth date,
+    email varchar(100),
+    phone_number varchar(15)
+);
+
+create table courses (
+    course_id int primary key auto_increment,
+    course_name varchar(100),
+    credits int,
+    teacher_id int,
+    foreign key (teacher_id) references teacher(teacher_id)
+);
+
+create table teacher (
+    teacher_id int primary key auto_increment,
+    first_name varchar(50),
+    last_name varchar(50),
+    email varchar(100)
+);
+
+create table enrollments (
+    enrollment_id int primary key auto_increment,
+    student_id int,
+    course_id int,
+    enrollment_date date,
+    foreign key (student_id) references students(student_id),
+    foreign key (course_id) references courses(course_id)
+);
+
+create table payments (
+    payment_id int primary key auto_increment,
+    student_id int,
+    amount decimal(10, 2),
+    payment_date date,
+    foreign key (student_id) references students(student_id)
+);
+
+-- inserting new students
+insert into students (first_name, last_name, date_of_birth, email, phone_number)
+values
+('hermione', 'granger', '1979-09-19', 'hermione.granger@example.com', '1234567890'),
+('ron', 'weasley', '1980-03-01', 'ron.weasley@example.com', '9876543210'),
+('draco', 'malfoy', '1980-06-05', 'draco.malfoy@example.com', '5551234567'),
+('ginny', 'weasley', '1981-08-11', 'ginny.weasley@example.com', '4567890123'),
+('neville', 'longbottom', '1980-07-30', 'neville.longbottom@example.com', '3216549870'),
+('john', 'doe', '1995-08-15', 'john.doe@example.com', '1234567890');
+
+insert into courses (course_name, credits, teacher_id)
+values
+('potions', 3, 3),
+('defense against the dark arts', 4, 1),
+('transfiguration', 3, 2),
+('charms', 2, 4),
+('history of magic', 2, 5);
+
+-- enrolling a new student 
+
+insert into enrollments (student_id, course_id, enrollment_date)
+values (3, 4, '2024-04-09');
+
+-- updating email address of a specific teacher
+
+update teacher
+set email = 'anandkarthick7@gmail.com'
+where teacher_id = 1;
+
+-- deleting an enrollment record
+
+delete from enrollments where student_id = 3 and course_id = 3;
+
+-- assigning teacher to a course
+
+update courses set teacher_id = 2 where course_id = 1;
+
+-- deleting a specific student and their enrollments
+
+delete from students where student_id = 2;
+
+-- updating the payment amount for a specific payment record
+
+update payments set amount = 1700 where payment_id = 3;
+
+-- task 3:
+
+-- the total payments made by a specific student
+
+select s.student_id, sum(p.amount) as total_payments
+from students s
+join payments p on s.student_id = p.student_id
+where s.student_id = 1
+group by s.student_id;
+
+-- list of courses along with the count of students enrolled in each course
+select c.course_name, count(e.student_id) as count_students
+from courses c
+left join enrollments e on c.course_id = e.course_id
+group by c.course_name;
+
+/*
+charms	1
+defense against the dark arts	0
+history of magic	0
+potions	0
+transfiguration	0
+*/
+
+-- the names of students who have not enrolled in any course
+select concat(first_name, ' ', last_name) as name
+from students
+where student_id not in (select distinct student_id from enrollments);
+
+/*
+hermione granger
+ginny weasley
+neville longbottom
+john doe
+*/
+
+-- retrieving the first name, last name of students, and the names of the courses they are enrolled in
+select s.first_name, s.last_name, c.course_name
+from students s
+join enrollments e on s.student_id = e.student_id
+join courses c on e.course_id = c.course_id;
+
+/*draco	malfoy	charms*/
+
+-- listing the names of teachers and the courses they are assigned to
+select concat(t.first_name, ' ', t.last_name) as teacher_name, c.course_name
+from teacher t
+join courses c on t.teacher_id = c.teacher_id;
+
+-- retrieving a list of students and their enrollment dates for a specific course
+select concat(s.first_name, ' ', s.last_name) as student_name, e.enrollment_date
+from students s
+join enrollments e on s.student_id = e.student_id
+join courses c on e.course_id = c.course_id
+where c.course_name = 'mathematics';
+
+-- finding the names of students who have not made any payments
+select concat(first_name, ' ', last_name) as student_name
+from students
+where student_id not in (select student_id from payments);
+/*hermione granger
+draco malfoy
+ginny weasley
+neville longbottom
+john doe*/
+
+-- identifying courses that have no enrollments
+select course_name
+from courses
+where course_id not in (select course_id from enrollments);
+
+-- identifying students who are enrolled in more than one course
+select concat(s.first_name, ' ', s.last_name) as student_name, e.student_id, e.course_id
+from enrollments e
+join students s on e.student_id = s.student_id
+group by e.student_id
+having count(e.course_id) > 1;
+
+-- finding teachers who are not assigned to any courses
+select concat(t.first_name, ' ', t.last_name) as teacher_name
+from teacher t
+where t.teacher_id not in (select distinct teacher_id from courses);
+
+-- task 4:
+
+-- calculating the average number of students enrolled in each course
+select avg(count_students) as average_students, course_name
+from (
+    select c.course_name, count(e.student_id) as count_students
+    from courses c
+    left join enrollments e on c.course_id = e.course_id
+    group by c.course_name
+) as course_counts
+group by course_name;
+
+/*1.0000	charms
+0.0000	defense against the dark arts
+0.0000	history of magic
+0.0000	potions
+0.0000	transfiguration*/
+
+-- identifying the student(s) who made the highest payment
+select student_id, max(amount) as highest_payment
+from payments
+group by student_id
+order by highest_payment desc
+limit 1;
+
+-- retrieving a list of courses with the highest number of enrollments
+select c.course_name
+from courses c
+join enrollments e on c.course_id = e.course_id
+group by c.course_name
+order by count(*) desc
+limit 1;
+
+/*charms*/
+
+-- calculating the total payments made to courses taught by each teacher
+select sum(p.amount) as total_payment, concat(t.first_name, ' ', t.last_name) as teacher_name
+from payments p
+join enrollments e on p.student_id = e.student_id
+join courses c on e.course_id = c.course_id
+join teacher t on c.teacher_id = t.teacher_id
+group by t.teacher_id;
+
+-- identifying students who are enrolled in all available courses
+select s.student_id
+from students s
+join courses c on true
+left join enrollments e on s.student_id = e.student_id and c.course_id = e.course_id
+group by s.student_id
+having count(e.enrollment_id) = (select count(*) from courses);
+
+-- retrieving the names of teachers who have not been assigned to any courses
+select concat(t.first_name, ' ', t.last_name) as teacher_name
+from teacher t
+left join courses c on t.teacher_id = c.teacher_id
+where c.course_id is null;
+
+-- identifying courses with no enrollments
+select c.course_name
+from courses c
+left join enrollments e on c.course_id = e.course_id
+where e.enrollment_id is null;
+
+/*potions
+defense against the dark arts
+transfiguration
+history of magic*/
+
+-- calculating the total payments made by each student for each course they are enrolled in
+select s.student_id, c.course_name, sum(p.amount) as total_payment
+from payments p
+join students s on p.student_id = s.student_id
+join enrollments e on s.student_id = e.student_id
+join courses c on e.course_id = c.course_id
+group by s.student_id, c.course_name;
+
+-- identifying students who have made more than one payment
+select student_id
+from payments
+group by student_id
+having count(*) > 1;
+
+-- calculating the total payments made by each student
+select student_id, sum(amount) as total_payment
+from payments
+group by student_id;
+
+-- retrieving a list of course names along with the count of students enrolled in each course
+select c.course_name, count(e.student_id) as enrolled_students
+from courses c
+left join enrollments e on c.course_id = e.course_id
+group by c.course_id;
+
+-- calculating the average payment amount made by students
+select avg(amount) as average_payment_amount
+from payments;
